@@ -5,9 +5,9 @@ import { rimraf } from "rimraf"
 import { registrySchema, type Registry } from "shadcn/schema"
 
 // Import registry definitions
-import { components } from "../registry/webgl/components/_registry.js"
-import { hooks } from "../registry/webgl/hooks/_registry.js"
-import { lib } from "../registry/webgl/lib/_registry.js"
+import { components } from "@/registry/webgl/components/_registry"
+import { hooks } from "@/registry/webgl/hooks/_registry"
+import { lib } from "@/registry/webgl/lib/_registry"
 
 const REGISTRY_NAME = "shadercn/webgl"
 const REGISTRY_HOMEPAGE = "https://shadercn.dev"
