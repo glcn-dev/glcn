@@ -1,7 +1,7 @@
 import * as THREE from "three"
 import { useThree } from '@react-three/fiber'
 import { useEffect, useMemo } from "react"
-import { DoubleFbo } from "../lib/double-fbo"
+import { DoubleFbo } from "@/registry/webgl/lib/double-fbo"
 
 export interface UseDoubleFboParams extends THREE.RenderTargetOptions {
   width?: number

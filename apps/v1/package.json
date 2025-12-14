@@ -4,18 +4,18 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "pnpm registry && pnpm --filter=shadcn build && next build",
     "start": "next start",
     "lint": "eslint",
-    "registry:build": "shadcn build"
+    "registry": "tsx --tsconfig ./tsconfig.scripts.json ./src/scripts/build-registry.mts"
   },
   "dependencies": {
     "@react-three/fiber": "^9.4.2",
     "next": "16.0.10",
     "react": "19.2.1",
     "react-dom": "19.2.1",
-    "shadcn": "^3.0.0",
-    "three": "^0.182.0"
+    "three": "^0.182.0",
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -25,7 +25,10 @@
     "@types/three": "^0.182.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.10",
+    "rimraf": "^6.1.2",
+    "shadcn": "^3.6.1",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

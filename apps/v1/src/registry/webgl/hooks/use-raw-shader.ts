@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 import { useMemo } from "react";
 import { IUniform, RawShaderMaterial, ShaderMaterialParameters } from "three";
-import { Defines, useDefines } from "./use-defines";
+import { Defines, useDefines } from "@/registry/webgl/hooks/use-defines";
 
 type RawShaderProgram<U extends Record<string, IUniform> = {}> = RawShaderMaterial & {
   uniforms: U;
