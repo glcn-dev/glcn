@@ -1,0 +1,1341 @@
+---
+alwaysApply: false
+---
+# shadcn/ui Registry Structure Guide
+
+**Target Audience:** Large Language Models (LLMs)
+**Purpose:** Complete reference for creating and structuring a shadcn/ui-compatible component registry
+
+---
+
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Registry Architecture](#registry-architecture)
+3. [Schema Definitions](#schema-definitions)
+4. [Component Organization](#component-organization)
+5. [File Types & Targets](#file-types--targets)
+6. [Dependencies Management](#dependencies-management)
+7. [Styling Configuration](#styling-configuration)
+8. [Build Process](#build-process)
+9. [Examples by Type](#examples-by-type)
+10. [Best Practices](#best-practices)
+
+---
+
+## Overview
+
+### Core Concept
+A shadcn/ui registry is a JSON-based distribution system for React components, hooks, utilities, and blocks. The registry follows a standardized schema enabling CLI-driven installation.
+
+### Key Requirements
+- Valid JSON conforming to registry schema specification
+- HTTPS-accessible endpoint serving JSON
+- Unique component names within registry
+- Proper dependency declarations (npm + registry)
+
+### Entry Point
+**`registry.json`** - Root manifest containing:
+- Registry metadata (name, homepage)
+- Array of registry items
+- Each item references component files
+
+---
+
+## Registry Architecture
+
+### Directory Structure
+```
+project-root/
+├── registry/
+│   ├── [style-name]/          # e.g., "new-york-v4", "default"
+│   │   ├── ui/                # UI components (primitives)
+│   │   │   ├── button.tsx
+│   │   │   ├── input.tsx
+│   │   │   └── _registry.ts   # TypeScript definitions
+│   │   ├── blocks/            # Complex multi-file components
+│   │   │   ├── dashboard-01/
+│   │   │   │   ├── page.tsx
+│   │   │   │   ├── data.json
+│   │   │   │   └── components/
+│   │   │   │       ├── app-sidebar.tsx
+│   │   │   │       └── nav-main.tsx
+│   │   │   └── _registry.ts
+│   │   ├── examples/          # Demo implementations
+│   │   │   ├── button-demo.tsx
+│   │   │   └── _registry.ts
+│   │   ├── hooks/             # Custom React hooks
+│   │   │   ├── use-mobile.ts
+│   │   │   └── _registry.ts
+│   │   └── lib/               # Utilities
+│   │       ├── utils.ts
+│   │       └── _registry.ts
+├── registry.json              # Main registry manifest
+├── public/
+│   ├── r/                     # Generated JSON per component
+│   │   ├── button.json
+│   │   ├── dashboard-01.json
+│   │   └── ...
+│   └── schema/                # JSON schemas
+│       ├── registry.json
+│       └── registry-item.json
+└── package.json
+```
+
+### Build Output
+The `shadcn build` command generates individual JSON files in `public/r/`:
+- **Input:** `registry.json` + actual source files
+- **Process:** Parse, transform, inline content
+- **Output:** `public/r/{name}.json` per registry item
+
+---
+
+## Schema Definitions
+
+### Registry Schema (`registry.json`)
+
+```json
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "string",              // Registry identifier (e.g., "shadcn/ui")
+  "homepage": "string",          // Registry homepage URL
+  "items": [                     // Array of registry items
+    {
+      // ... registry item schema
+    }
+  ]
+}
+```
+
+**Required Fields:** `name`, `homepage`, `items`
+
+### Registry Item Schema
+
+```typescript
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "string",                    // REQUIRED: Unique identifier
+  "type": "registry:*",                // REQUIRED: Item type (see types below)
+  "title": "string",                   // OPTIONAL: Human-readable title
+  "description": "string",             // OPTIONAL: Brief description
+  "author": "string",                  // OPTIONAL: "Name <url>"
+  "dependencies": ["string"],          // OPTIONAL: npm packages
+  "devDependencies": ["string"],       // OPTIONAL: npm dev packages
+  "registryDependencies": ["string"],  // OPTIONAL: Other registry items
+  "files": [                           // OPTIONAL: Component files
+    {
+      "path": "string",                // Relative to registry root
+      "type": "registry:*",            // File type
+      "target": "string",              // OPTIONAL: Install destination
+      "content": "string"              // OPTIONAL: Inlined during build
+    }
+  ],
+  "tailwind": {                        // OPTIONAL: Tailwind v3 config
+    "config": {
+      "content": ["string"],
+      "theme": {},
+      "plugins": ["string"]
+    }
+  },
+  "cssVars": {                         // OPTIONAL: CSS variables
+    "theme": {},                       // Tailwind v4 @theme directive
+    "light": {},                       // Light mode variables
+    "dark": {}                         // Dark mode variables
+  },
+  "css": {},                           // OPTIONAL: Direct CSS rules
+  "envVars": {},                       // OPTIONAL: Environment variables
+  "meta": {},                          // OPTIONAL: Custom metadata
+  "docs": "string",                    // OPTIONAL: Installation docs (markdown)
+  "categories": ["string"],            // OPTIONAL: Organization tags
+  "extends": "string"                  // OPTIONAL: Base style to extend
+}
+```
+
+---
+
+## Component Organization
+
+### Registry Item Types
+
+| Type | Purpose | Target Path | Notes |
+|------|---------|-------------|-------|
+| `registry:ui` | UI primitives (single-file components) | `components/ui/` | Core building blocks |
+| `registry:component` | Reusable components | `components/` | Generic components |
+| `registry:block` | Complex multi-file patterns | `components/` or `app/` | Full-featured sections |
+| `registry:hook` | Custom React hooks | `hooks/` | Logic extraction |
+| `registry:lib` | Utility functions | `lib/` | Helper functions |
+| `registry:page` | Full page templates | User-defined via `target` | Route files |
+| `registry:file` | Miscellaneous files | User-defined via `target` | Configs, data files |
+| `registry:theme` | Theme definitions | Applied to CSS | Color schemes |
+| `registry:style` | Style presets | Applied globally | Design system base |
+| `registry:item` | Universal items | Any | Framework-agnostic |
+
+### File Organization Best Practices
+
+**UI Components (registry:ui):**
+```
+registry/new-york-v4/ui/
+├── button.tsx           # Single file
+├── card.tsx
+└── _registry.ts         # TypeScript registry definitions
+```
+
+**Blocks (registry:block):**
+```
+registry/new-york-v4/blocks/
+├── dashboard-01/
+│   ├── page.tsx                    # Main entry point
+│   ├── data.json                   # Mock data
+│   └── components/                 # Sub-components
+│       ├── app-sidebar.tsx
+│       ├── nav-main.tsx
+│       └── site-header.tsx
+└── _registry.ts
+```
+
+**Hooks (registry:hook):**
+```
+registry/new-york-v4/hooks/
+├── use-mobile.ts
+├── use-toast.ts
+└── _registry.ts
+```
+
+---
+
+## File Types & Targets
+
+### File Type Rules
+
+1. **`registry:page` and `registry:file`** - `target` is **REQUIRED**
+2. **All other types** - `target` is **OPTIONAL**
+
+### Target Path Syntax
+
+- **Absolute from project root:** `app/dashboard/page.tsx`
+- **Relative to config alias:** Uses `components.json` aliases
+- **Home directory:** `~/.config/file.json` (expands to project root)
+
+### Examples
+
+```json
+{
+  "files": [
+    {
+      "path": "blocks/dashboard-01/page.tsx",
+      "type": "registry:page",
+      "target": "app/dashboard/page.tsx"      // Required
+    },
+    {
+      "path": "blocks/dashboard-01/components/app-sidebar.tsx",
+      "type": "registry:component"             // target optional
+    },
+    {
+      "path": "blocks/login-01/.env",
+      "type": "registry:file",
+      "target": "~/.env.local"                 // Required
+    }
+  ]
+}
+```
+
+---
+
+## Dependencies Management
+
+### Dependency Types
+
+#### 1. NPM Dependencies (`dependencies`)
+External packages from npm registry.
+
+```json
+{
+  "dependencies": [
+    "@radix-ui/react-accordion",
+    "zod",
+    "lucide-react",
+    "recharts@2.15.4"              // Version pinning
+  ]
+}
+```
+
+**Format:** `package-name[@version]`
+
+#### 2. Dev Dependencies (`devDependencies`)
+Development-only packages.
+
+```json
+{
+  "devDependencies": [
+    "tw-animate-css",
+    "@types/node"
+  ]
+}
+```
+
+#### 3. Registry Dependencies (`registryDependencies`)
+Components from registries.
+
+```json
+{
+  "registryDependencies": [
+    "button",                                          // shadcn/ui component
+    "input",                                           // shadcn/ui component
+    "@acme/custom-component",                          // Namespaced registry
+    "https://example.com/r/editor.json"                // Direct URL
+  ]
+}
+```
+
+**Resolution Order:**
+1. Check configured registries in `components.json`
+2. Check shadcn/ui registry
+3. Fetch from URL if absolute path
+
+### Dependency Resolution Example
+
+```json
+{
+  "name": "dashboard-01",
+  "type": "registry:block",
+  "dependencies": [
+    "@tanstack/react-table",
+    "zod"
+  ],
+  "registryDependencies": [
+    "sidebar",               // Will install sidebar + its dependencies
+    "button",                // Will install button + @radix-ui/react-slot
+    "chart"                  // Will install chart + recharts + lucide-react
+  ]
+}
+```
+
+---
+
+## Styling Configuration
+
+### CSS Variables (`cssVars`)
+
+Used for Tailwind v4 and CSS custom properties.
+
+```json
+{
+  "cssVars": {
+    "theme": {
+      "font-heading": "Poppins, sans-serif",
+      "spacing": "0.2rem",
+      "breakpoint-md": "768px"
+    },
+    "light": {
+      "background": "0 0% 100%",
+      "foreground": "240 10% 3.9%",
+      "brand": "20 14.3% 4.1%"
+    },
+    "dark": {
+      "background": "240 10% 3.9%",
+      "foreground": "0 0% 98%",
+      "brand": "20 14.3% 4.1%"
+    }
+  }
+}
+```
+
+**Output:**
+```css
+@theme {
+  --font-heading: Poppins, sans-serif;
+  --spacing: 0.2rem;
+  --breakpoint-md: 768px;
+}
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 240 10% 3.9%;
+  --brand: 20 14.3% 4.1%;
+}
+
+.dark {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --brand: 20 14.3% 4.1%;
+}
+```
+
+### Tailwind Configuration (`tailwind`)
+
+**DEPRECATED** - Use `cssVars.theme` for Tailwind v4.
+
+For Tailwind v3 projects:
+
+```json
+{
+  "tailwind": {
+    "config": {
+      "theme": {
+        "extend": {
+          "colors": {
+            "brand": "hsl(var(--brand))"
+          },
+          "keyframes": {
+            "accordion-down": {
+              "from": { "height": "0" },
+              "to": { "height": "var(--radix-accordion-content-height)" }
+            }
+          },
+          "animation": {
+            "accordion-down": "accordion-down 0.2s ease-out"
+          }
+        }
+      },
+      "plugins": ["tailwindcss-animate"]
+    }
+  }
+}
+```
+
+### Direct CSS (`css`)
+
+Add CSS rules directly to project's CSS file.
+
+```json
+{
+  "css": {
+    "@import \"tailwindcss\"": {},
+    "@import url(\"https://fonts.googleapis.com/css2?family=Inter\")": {},
+    "@plugin \"@tailwindcss/typography\"": {},
+    "@layer base": {
+      "body": {
+        "font-family": "Inter, sans-serif"
+      }
+    },
+    "@layer components": {
+      ".card": {
+        "background": "var(--background)",
+        "border-radius": "var(--radius)"
+      }
+    },
+    "@utility content-auto": {
+      "content-visibility": "auto"
+    },
+    "@keyframes wiggle": {
+      "0%, 100%": { "transform": "rotate(-3deg)" },
+      "50%": { "transform": "rotate(3deg)" }
+    }
+  }
+}
+```
+
+**Order of insertion:**
+1. `@import` statements
+2. `@plugin` statements
+3. All other CSS rules
+
+### Environment Variables (`envVars`)
+
+```json
+{
+  "envVars": {
+    "NEXT_PUBLIC_APP_URL": "http://localhost:3000",
+    "DATABASE_URL": "postgresql://localhost:5432/db",
+    "OPENAI_API_KEY": ""
+  }
+}
+```
+
+**Behavior:**
+- Added to `.env.local` or `.env`
+- Existing variables NOT overwritten
+- Empty values create placeholders
+
+---
+
+## Build Process
+
+### Build Command
+
+```bash
+npx shadcn@latest build
+```
+
+**Default behavior:**
+- Reads `registry.json`
+- Parses each file in `files` array
+- Transforms imports/exports
+- Inlines file content
+- Outputs to `public/r/{name}.json`
+
+### Build Configuration
+
+**package.json:**
+```json
+{
+  "scripts": {
+    "registry:build": "shadcn build",
+    "registry:build:custom": "shadcn build --output dist/registry"
+  }
+}
+```
+
+### TypeScript Registry Definitions
+
+Create `_registry.ts` files to define items programmatically:
+
+```typescript
+import { type Registry } from "shadcn/schema"
+
+export const ui: Registry["items"] = [
+  {
+    name: "button",
+    type: "registry:ui",
+    dependencies: ["@radix-ui/react-slot"],
+    files: [
+      {
+        path: "ui/button.tsx",
+        type: "registry:ui",
+      },
+    ],
+  },
+  {
+    name: "card",
+    type: "registry:ui",
+    files: [
+      {
+        path: "ui/card.tsx",
+        type: "registry:ui",
+      },
+    ],
+  },
+]
+```
+
+**Import in build script:**
+```typescript
+import { ui } from "./registry/new-york-v4/ui/_registry"
+import { blocks } from "./registry/new-york-v4/blocks/_registry"
+
+const registry: Registry = {
+  name: "shadcn/ui",
+  homepage: "https://ui.shadcn.com",
+  items: [...ui, ...blocks],
+}
+```
+
+---
+
+## Examples by Type
+
+### 1. Simple UI Component
+
+**Item Definition:**
+```json
+{
+  "name": "button",
+  "type": "registry:ui",
+  "dependencies": ["@radix-ui/react-slot"],
+  "files": [
+    {
+      "path": "registry/new-york-v4/ui/button.tsx",
+      "type": "registry:ui"
+    }
+  ]
+}
+```
+
+**File Structure:**
+```
+registry/new-york-v4/ui/
+└── button.tsx
+```
+
+### 2. Component with Registry Dependency
+
+**Item Definition:**
+```json
+{
+  "name": "alert-dialog",
+  "type": "registry:ui",
+  "dependencies": ["@radix-ui/react-alert-dialog"],
+  "registryDependencies": ["button"],
+  "files": [
+    {
+      "path": "registry/new-york-v4/ui/alert-dialog.tsx",
+      "type": "registry:ui"
+    }
+  ]
+}
+```
+
+### 3. Complex Block with Multiple Files
+
+**Item Definition:**
+```json
+{
+  "name": "dashboard-01",
+  "type": "registry:block",
+  "description": "A dashboard with sidebar, charts and data table.",
+  "dependencies": [
+    "@dnd-kit/core",
+    "@tanstack/react-table",
+    "zod"
+  ],
+  "registryDependencies": [
+    "sidebar",
+    "breadcrumb",
+    "chart",
+    "table"
+  ],
+  "files": [
+    {
+      "path": "blocks/dashboard-01/page.tsx",
+      "type": "registry:page",
+      "target": "app/dashboard/page.tsx"
+    },
+    {
+      "path": "blocks/dashboard-01/data.json",
+      "type": "registry:file",
+      "target": "app/dashboard/data.json"
+    },
+    {
+      "path": "blocks/dashboard-01/components/app-sidebar.tsx",
+      "type": "registry:component"
+    },
+    {
+      "path": "blocks/dashboard-01/components/nav-main.tsx",
+      "type": "registry:component"
+    }
+  ],
+  "categories": ["dashboard"],
+  "meta": {
+    "iframeHeight": "1000px"
+  }
+}
+```
+
+**File Structure:**
+```
+registry/new-york-v4/blocks/dashboard-01/
+├── page.tsx
+├── data.json
+└── components/
+    ├── app-sidebar.tsx
+    ├── nav-main.tsx
+    └── site-header.tsx
+```
+
+### 4. Hook with Dependency
+
+**Item Definition:**
+```json
+{
+  "name": "use-toast",
+  "type": "registry:hook",
+  "dependencies": ["@radix-ui/react-toast"],
+  "files": [
+    {
+      "path": "registry/new-york-v4/hooks/use-toast.ts",
+      "type": "registry:hook"
+    }
+  ]
+}
+```
+
+### 5. Style Preset
+
+**Item Definition:**
+```json
+{
+  "name": "new-york",
+  "type": "registry:style",
+  "dependencies": [
+    "class-variance-authority",
+    "lucide-react"
+  ],
+  "devDependencies": [
+    "tw-animate-css"
+  ],
+  "registryDependencies": [
+    "utils"
+  ],
+  "cssVars": {
+    "theme": {
+      "font-sans": "Inter, sans-serif"
+    },
+    "light": {
+      "background": "0 0% 100%",
+      "foreground": "240 10% 3.9%",
+      "card": "0 0% 100%",
+      "card-foreground": "240 10% 3.9%",
+      "primary": "240 5.9% 10%",
+      "primary-foreground": "0 0% 98%"
+    },
+    "dark": {
+      "background": "240 10% 3.9%",
+      "foreground": "0 0% 98%",
+      "card": "240 10% 3.9%",
+      "card-foreground": "0 0% 98%",
+      "primary": "0 0% 98%",
+      "primary-foreground": "240 5.9% 10%"
+    }
+  }
+}
+```
+
+### 6. Theme Definition
+
+**Item Definition:**
+```json
+{
+  "name": "purple-theme",
+  "type": "registry:theme",
+  "cssVars": {
+    "light": {
+      "background": "0 0% 100%",
+      "foreground": "240 10% 3.9%",
+      "primary": "262.1 83.3% 57.8%",
+      "primary-foreground": "210 20% 98%"
+    },
+    "dark": {
+      "background": "20 14.3% 4.1%",
+      "foreground": "0 0% 95%",
+      "primary": "263.4 70% 50.4%",
+      "primary-foreground": "210 20% 98%"
+    }
+  }
+}
+```
+
+### 7. Component with Custom CSS
+
+**Item Definition:**
+```json
+{
+  "name": "custom-card",
+  "type": "registry:component",
+  "dependencies": ["framer-motion"],
+  "files": [
+    {
+      "path": "registry/default/custom-card.tsx",
+      "type": "registry:component"
+    }
+  ],
+  "cssVars": {
+    "theme": {
+      "--animate-pulse": "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite"
+    }
+  },
+  "css": {
+    "@keyframes pulse": {
+      "0%, 100%": { "opacity": "1" },
+      "50%": { "opacity": "0.5" }
+    },
+    "@layer components": {
+      ".custom-card": {
+        "border-radius": "var(--radius)",
+        "background": "var(--card)"
+      }
+    }
+  }
+}
+```
+
+### 8. Universal Item (Framework-Agnostic)
+
+**Item Definition:**
+```json
+{
+  "name": "cursor-rules",
+  "type": "registry:item",
+  "files": [
+    {
+      "path": "registry/default/cursor-rules.mdc",
+      "type": "registry:file",
+      "target": "~/.cursor/rules/react-rules.mdc"
+    }
+  ]
+}
+```
+
+### 9. Component with Environment Variables
+
+**Item Definition:**
+```json
+{
+  "name": "ai-chat",
+  "type": "registry:component",
+  "dependencies": ["openai"],
+  "registryDependencies": ["button", "input"],
+  "files": [
+    {
+      "path": "registry/default/ai-chat.tsx",
+      "type": "registry:component"
+    }
+  ],
+  "envVars": {
+    "OPENAI_API_KEY": "",
+    "OPENAI_MODEL": "gpt-4"
+  },
+  "docs": "Get an API key from https://platform.openai.com"
+}
+```
+
+### 10. Component with Tailwind Plugin
+
+**Item Definition:**
+```json
+{
+  "name": "typography",
+  "type": "registry:component",
+  "dependencies": ["@tailwindcss/typography"],
+  "files": [
+    {
+      "path": "registry/default/typography.tsx",
+      "type": "registry:component"
+    }
+  ],
+  "css": {
+    "@plugin \"@tailwindcss/typography\"": {},
+    "@layer components": {
+      ".prose": {
+        "max-width": "65ch"
+      }
+    }
+  }
+}
+```
+
+---
+
+## Best Practices
+
+### Naming Conventions
+
+**Registry Items:**
+- Use kebab-case: `button`, `alert-dialog`, `use-mobile`
+- Descriptive names: `dashboard-01` not `dashboard`
+- Numbered variants: `login-01`, `login-02`, `login-03`
+
+**Files:**
+- Match component name: `button.tsx`, `use-mobile.ts`
+- Component subdirectories: `dashboard-01/components/`
+
+### Component Structure
+
+**Single-file component (UI):**
+```tsx
+// registry/new-york-v4/ui/button.tsx
+import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { cva, type VariantProps } from "class-variance-authority"
+import { cn } from "@/lib/utils"
+
+const buttonVariants = cva(
+  "inline-flex items-center justify-center",
+  {
+    variants: {
+      variant: {
+        default: "bg-primary text-primary-foreground",
+        destructive: "bg-destructive text-destructive-foreground",
+      },
+      size: {
+        default: "h-10 px-4 py-2",
+        sm: "h-9 px-3",
+        lg: "h-11 px-8",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+)
+
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean
+}
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button"
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        {...props}
+      />
+    )
+  }
+)
+Button.displayName = "Button"
+
+export { Button, buttonVariants }
+```
+
+**Block structure:**
+```tsx
+// registry/new-york-v4/blocks/dashboard-01/page.tsx
+import { AppSidebar } from "./components/app-sidebar"
+import { NavMain } from "./components/nav-main"
+import { SiteHeader } from "./components/site-header"
+
+export default function DashboardPage() {
+  return (
+    <div className="flex min-h-screen">
+      <AppSidebar />
+      <div className="flex-1">
+        <SiteHeader />
+        <main>{/* content */}</main>
+      </div>
+    </div>
+  )
+}
+
+// registry/new-york-v4/blocks/dashboard-01/components/app-sidebar.tsx
+import { Sidebar } from "@/components/ui/sidebar"
+
+export function AppSidebar() {
+  return <Sidebar>{/* sidebar content */}</Sidebar>
+}
+```
+
+### Import Paths
+
+**Always use alias imports:**
+```tsx
+// ✅ CORRECT
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { DashboardIcon } from "@/components/icons"
+
+// ❌ WRONG
+import { Button } from "../ui/button"
+import { cn } from "../../lib/utils"
+```
+
+### Dependency Management
+
+**Be explicit and complete:**
+```json
+{
+  "dependencies": [
+    "@radix-ui/react-dialog",
+    "framer-motion@10.16.4",        // Pin versions when needed
+    "zod"
+  ],
+  "registryDependencies": [
+    "button",                        // Will auto-resolve dependencies
+    "input",
+    "label"
+  ]
+}
+```
+
+**Avoid circular dependencies:**
+- Don't have `button` depend on `alert-dialog` if `alert-dialog` depends on `button`
+
+### Documentation
+
+**Add helpful docs:**
+```json
+{
+  "name": "payment-form",
+  "description": "A payment form with Stripe integration.",
+  "docs": "## Setup\n\n1. Get your Stripe keys from https://dashboard.stripe.com\n2. Add them to your .env file\n3. Install Stripe CLI for webhooks\n\n## Usage\n\n```tsx\nimport { PaymentForm } from \"@/components/payment-form\"\n\nexport default function Page() {\n  return <PaymentForm />\n}\n```",
+  "envVars": {
+    "STRIPE_PUBLIC_KEY": "",
+    "STRIPE_SECRET_KEY": ""
+  }
+}
+```
+
+### Metadata
+
+**Use meta for UI customization:**
+```json
+{
+  "name": "login-form",
+  "meta": {
+    "iframeHeight": "800px",
+    "order": 1,
+    "featured": true,
+    "preview": "https://example.com/previews/login-form.png"
+  }
+}
+```
+
+### Categories
+
+**Organize with categories:**
+```json
+{
+  "categories": ["authentication", "forms", "dashboard"]
+}
+```
+
+Common categories:
+- `ui` - Basic UI components
+- `forms` - Form-related components
+- `navigation` - Navigation components
+- `layout` - Layout components
+- `authentication` - Auth-related
+- `dashboard` - Dashboard patterns
+- `ecommerce` - E-commerce patterns
+- `marketing` - Marketing pages
+
+### Testing
+
+**Verify your registry:**
+1. Run build: `npm run registry:build`
+2. Check output: `public/r/`
+3. Validate JSON: Use JSON schema validator
+4. Test install: `npx shadcn add http://localhost:3000/r/component.json`
+
+### Serving
+
+**Development:**
+```bash
+npm run dev
+# Registry available at: http://localhost:3000/r/
+```
+
+**Production:**
+- Deploy to Vercel, Netlify, or any static host
+- Ensure HTTPS
+- Enable CORS if needed
+- Consider CDN for performance
+
+---
+
+## Common Patterns
+
+### Pattern 1: Component Family
+
+Create related components with shared dependencies:
+
+```json
+{
+  "items": [
+    {
+      "name": "form",
+      "type": "registry:ui",
+      "dependencies": [
+        "react-hook-form",
+        "@hookform/resolvers",
+        "zod"
+      ],
+      "registryDependencies": ["button", "label"]
+    },
+    {
+      "name": "form-input",
+      "type": "registry:component",
+      "registryDependencies": ["form", "input"]
+    },
+    {
+      "name": "form-select",
+      "type": "registry:component",
+      "registryDependencies": ["form", "select"]
+    }
+  ]
+}
+```
+
+### Pattern 2: Themed Variants
+
+Offer multiple visual styles:
+
+```json
+{
+  "items": [
+    {
+      "name": "button-minimal",
+      "type": "registry:ui",
+      "files": [
+        {
+          "path": "registry/minimal/ui/button.tsx",
+          "type": "registry:ui"
+        }
+      ]
+    },
+    {
+      "name": "button-glassmorphism",
+      "type": "registry:ui",
+      "files": [
+        {
+          "path": "registry/glass/ui/button.tsx",
+          "type": "registry:ui"
+        }
+      ],
+      "css": {
+        "@layer components": {
+          ".button-glass": {
+            "backdrop-filter": "blur(10px)",
+            "background": "rgba(255, 255, 255, 0.1)"
+          }
+        }
+      }
+    }
+  ]
+}
+```
+
+### Pattern 3: Progressive Enhancement
+
+Start simple, offer complex:
+
+```json
+{
+  "items": [
+    {
+      "name": "table-basic",
+      "type": "registry:ui",
+      "files": [{ "path": "registry/default/table.tsx", "type": "registry:ui" }]
+    },
+    {
+      "name": "table-sortable",
+      "type": "registry:component",
+      "registryDependencies": ["table-basic"],
+      "files": [{ "path": "registry/default/table-sortable.tsx", "type": "registry:component" }]
+    },
+    {
+      "name": "data-table",
+      "type": "registry:block",
+      "dependencies": ["@tanstack/react-table"],
+      "registryDependencies": ["table-sortable", "input", "button"],
+      "files": [
+        { "path": "blocks/data-table/data-table.tsx", "type": "registry:component" },
+        { "path": "blocks/data-table/columns.tsx", "type": "registry:component" }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## Validation Checklist
+
+Before publishing your registry, ensure:
+
+- [ ] `registry.json` conforms to schema
+- [ ] All `name` fields are unique
+- [ ] All file `path` values exist
+- [ ] `target` provided for `registry:page` and `registry:file`
+- [ ] All `dependencies` are valid npm packages
+- [ ] All `registryDependencies` exist (shadcn/ui or namespaced)
+- [ ] Import paths use aliases (`@/`)
+- [ ] CSS variables follow naming convention
+- [ ] Environment variables have descriptive names
+- [ ] `docs` field provides helpful setup instructions
+- [ ] `description` is clear and concise
+- [ ] Build completes without errors
+- [ ] Generated JSON files are valid
+- [ ] Test installation in fresh project
+
+---
+
+## Error Prevention
+
+### Common Mistakes
+
+1. **Missing target for page/file types:**
+   ```json
+   // ❌ WRONG
+   {
+     "path": "blocks/login/page.tsx",
+     "type": "registry:page"
+     // Missing: "target"
+   }
+
+   // ✅ CORRECT
+   {
+     "path": "blocks/login/page.tsx",
+     "type": "registry:page",
+     "target": "app/login/page.tsx"
+   }
+   ```
+
+2. **Relative imports:**
+   ```tsx
+   // ❌ WRONG
+   import { Button } from "../ui/button"
+
+   // ✅ CORRECT
+   import { Button } from "@/components/ui/button"
+   ```
+
+3. **Missing registry dependencies:**
+   ```json
+   // ❌ WRONG - uses Button but not declared
+   {
+     "name": "login-form",
+     "registryDependencies": []
+   }
+
+   // ✅ CORRECT
+   {
+     "name": "login-form",
+     "registryDependencies": ["button", "input", "label"]
+   }
+   ```
+
+4. **Incorrect file types:**
+   ```json
+   // ❌ WRONG - hook file marked as component
+   {
+     "path": "hooks/use-mobile.ts",
+     "type": "registry:component"
+   }
+
+   // ✅ CORRECT
+   {
+     "path": "hooks/use-mobile.ts",
+     "type": "registry:hook"
+   }
+   ```
+
+---
+
+## Quick Reference
+
+### Registry Item Minimum
+
+```json
+{
+  "name": "my-component",
+  "type": "registry:ui",
+  "files": [
+    {
+      "path": "registry/default/my-component.tsx",
+      "type": "registry:ui"
+    }
+  ]
+}
+```
+
+### With Dependencies
+
+```json
+{
+  "name": "my-component",
+  "type": "registry:ui",
+  "dependencies": ["framer-motion"],
+  "registryDependencies": ["button"],
+  "files": [
+    {
+      "path": "registry/default/my-component.tsx",
+      "type": "registry:ui"
+    }
+  ]
+}
+```
+
+### With Styling
+
+```json
+{
+  "name": "my-component",
+  "type": "registry:ui",
+  "files": [
+    {
+      "path": "registry/default/my-component.tsx",
+      "type": "registry:ui"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "my-component-bg": "0 0% 100%"
+    },
+    "dark": {
+      "my-component-bg": "240 10% 3.9%"
+    }
+  }
+}
+```
+
+### Block with Multiple Files
+
+```json
+{
+  "name": "feature-section",
+  "type": "registry:block",
+  "registryDependencies": ["card", "button"],
+  "files": [
+    {
+      "path": "blocks/feature-section/page.tsx",
+      "type": "registry:page",
+      "target": "app/features/page.tsx"
+    },
+    {
+      "path": "blocks/feature-section/components/feature-card.tsx",
+      "type": "registry:component"
+    },
+    {
+      "path": "blocks/feature-section/data.json",
+      "type": "registry:file",
+      "target": "app/features/data.json"
+    }
+  ]
+}
+```
+
+---
+
+## Installation Commands
+
+### Basic Installation
+```bash
+npx shadcn@latest add button
+npx shadcn@latest add https://example.com/r/button.json
+```
+
+### Namespaced Registry
+```bash
+npx shadcn@latest add @acme/button
+```
+
+### With Overwrite
+```bash
+npx shadcn@latest add button --overwrite
+```
+
+### Multiple Components
+```bash
+npx shadcn@latest add button input label card
+```
+
+---
+
+## Summary
+
+A shadcn/ui registry consists of:
+
+1. **registry.json** - Root manifest with metadata and items array
+2. **Registry items** - Individual component definitions with metadata
+3. **Source files** - Actual component implementations
+4. **Build output** - Generated JSON files in `public/r/`
+
+**Key principles:**
+- JSON-based distribution
+- CLI-driven installation
+- Dependency resolution (npm + registry)
+- Flexible styling (CSS vars, Tailwind)
+- Type-safe with TypeScript
+- Framework-agnostic capability
+
+**For LLM usage:**
+- Parse registry schema to understand structure
+- Generate valid JSON following patterns
+- Ensure complete dependency declarations
+- Use proper file types and targets
+- Follow import path conventions
+- Include helpful documentation
+
+---
+
+**Schema URLs:**
+- Registry: `https://ui.shadcn.com/schema/registry.json`
+- Registry Item: `https://ui.shadcn.com/schema/registry-item.json`
+
+**Official Documentation:** https://ui.shadcn.com/docs/registry
+
