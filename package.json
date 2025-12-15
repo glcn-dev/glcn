@@ -1,5 +1,5 @@
 {
-  "name": "shadercn",
+  "name": "glcn-monorepo",
   "private": true,
   "scripts": {
     "build": "turbo run build",

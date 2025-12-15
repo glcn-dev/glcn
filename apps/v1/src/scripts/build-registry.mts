@@ -34,9 +34,9 @@ const { components } = componentsModule
 const { hooks } = hooksModule
 const { lib } = libModule
 
-const REGISTRY_NAME = "shadercn/webgl"
-const REGISTRY_HOMEPAGE = "https://shadercn.dev"
-const REGISTRY_URL = "https://shadercn.dev/r/webgl"
+const REGISTRY_NAME = "glcn/webgl"
+const REGISTRY_HOMEPAGE = "https://glcn.dev"
+const REGISTRY_URL = "https://glcn.dev/r/webgl"
 const OUTPUT_DIR = "public/r/webgl"
 
 async function buildRegistry() {

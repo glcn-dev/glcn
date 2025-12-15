@@ -1,4 +1,4 @@
-# shadercn/webgl Registry
+# glcn/webgl Registry
 
 A TypeScript-based registry system for WebGL components, hooks, and utilities following the shadcn/ui registry specification.
 
@@ -256,8 +256,8 @@ Validation ensures:
 
 ```json
 {
-  "name": "shadercn/webgl",
-  "homepage": "https://shadercn.dev",
+  "name": "glcn/webgl",
+  "homepage": "https://glcn.dev",
   "items": [...]
 }
 ```
