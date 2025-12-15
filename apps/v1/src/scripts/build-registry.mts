@@ -36,7 +36,7 @@ const { lib } = libModule
 
 const REGISTRY_NAME = "shadercn/webgl"
 const REGISTRY_HOMEPAGE = "https://shadercn.dev"
-const REGISTRY_URL = "https://shadecn.dev/r/webgl"
+const REGISTRY_URL = "https://shadercn.dev/r/webgl"
 const OUTPUT_DIR = "public/r/webgl"
 
 async function buildRegistry() {
