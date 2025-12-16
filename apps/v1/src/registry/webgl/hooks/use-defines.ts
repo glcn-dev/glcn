@@ -1,9 +1,12 @@
 import { useEffect } from "react";
 import { RawShaderMaterial, ShaderMaterial } from "three";
 
-export type Defines = Record<string, string | number | boolean>
+export type Defines = Record<string, string | number | boolean>;
 
-export function useDefines(program: ShaderMaterial | RawShaderMaterial, defines?: Defines) {
+export function useDefines(
+  program: ShaderMaterial | RawShaderMaterial,
+  defines?: Defines
+) {
   // Make program react to defines
   useEffect(() => {
     if (!program || !defines) return;

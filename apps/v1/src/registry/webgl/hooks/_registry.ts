@@ -1,4 +1,4 @@
-import { type Registry } from "shadcn/schema"
+import { type Registry } from "shadcn/schema";
 
 export const hooks: Registry["items"] = [
   {
@@ -16,7 +16,8 @@ export const hooks: Registry["items"] = [
   {
     name: "use-double-fbo",
     type: "registry:hook",
-    description: "A hook for managing double frame buffer objects with automatic ping-pong",
+    description:
+      "A hook for managing double frame buffer objects with automatic ping-pong",
     dependencies: ["@react-three/fiber", "three"],
     registryDependencies: ["double-fbo"],
     files: [
@@ -29,7 +30,8 @@ export const hooks: Registry["items"] = [
   {
     name: "use-fbo",
     type: "registry:hook",
-    description: "A hook for managing frame buffer objects in React Three Fiber",
+    description:
+      "A hook for managing frame buffer objects in React Three Fiber",
     dependencies: ["@react-three/fiber", "three"],
     files: [
       {
@@ -41,9 +43,10 @@ export const hooks: Registry["items"] = [
   {
     name: "use-raw-shader",
     type: "registry:hook",
-    description: "A hook for creating and managing RawShaderMaterial with defines support",
+    description:
+      "A hook for creating and managing RawShaderMaterial with defines support",
     dependencies: ["three"],
-    registryDependencies: ["use-defines"],
+    registryDependencies: ["use-defines", "webgl-types"],
     files: [
       {
         path: "registry/webgl/hooks/use-raw-shader.ts",
@@ -54,9 +57,10 @@ export const hooks: Registry["items"] = [
   {
     name: "use-shader",
     type: "registry:hook",
-    description: "A hook for creating and managing ShaderMaterial with defines support",
+    description:
+      "A hook for creating and managing ShaderMaterial with defines support",
     dependencies: ["three"],
-    registryDependencies: ["use-defines"],
+    registryDependencies: ["use-defines", "webgl-types"],
     files: [
       {
         path: "registry/webgl/hooks/use-shader.ts",
@@ -76,4 +80,4 @@ export const hooks: Registry["items"] = [
       },
     ],
   },
-]
+];

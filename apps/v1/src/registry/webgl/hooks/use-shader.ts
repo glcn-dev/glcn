@@ -1,16 +1,23 @@
-/* eslint-disable @typescript-eslint/no-empty-object-type */
 import { useMemo } from "react";
-import { IUniform, ShaderMaterial, ShaderMaterialParameters } from "three";
+import { ShaderMaterial, ShaderMaterialParameters } from "three";
 import { Defines, useDefines } from "@/registry/webgl/hooks/use-defines";
+import type { Uniforms } from "@/registry/webgl/lib/webgl-types";
 
-type ShaderProgram<U extends Record<string, IUniform> = {}> = ShaderMaterial & {
+type ShaderProgram<U extends Uniforms = Uniforms> = ShaderMaterial & {
   uniforms: U;
   setDefine: (name: string, value: string) => void;
 };
 
-export function useShader<U extends Record<string, IUniform> = {}>(
-  parameters: Omit<ShaderMaterialParameters, "uniforms"> & U = {} as U,
-  defines?: Defines
+interface ShaderParameters<U extends Uniforms = Uniforms> extends Omit<
+  ShaderMaterialParameters,
+  "uniforms" | "defines"
+> {
+  uniforms?: U;
+}
+
+export function useShader<U extends Uniforms = Uniforms>(
+  parameters: ShaderParameters<U>,
+  defines: Defines = {}
 ): ShaderProgram<U> {
   const program = useMemo(() => {
     const p = new ShaderMaterial({
@@ -26,8 +33,7 @@ export function useShader<U extends Record<string, IUniform> = {}>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parameters.vertexShader, parameters.fragmentShader]);
 
-  useDefines(program, defines)
+  useDefines(program, defines);
 
   return program;
 }
-

@@ -1,10 +1,3 @@
-/* eslint-disable react-hooks/immutability */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/**
- * This file is based on the RenderTexture component from react-three/drei.
- * Source: https://github.com/pmndrs/drei/blob/master/src/core/RenderTexture.tsx
- * License: https://github.com/pmndrs/drei/blob/master/LICENSE
- */
 
 import type { RootState } from "@react-three/fiber";
 import { createPortal, useFrame, useThree } from "@react-three/fiber";
@@ -21,6 +14,8 @@ import {
 } from "react";
 import * as THREE from "three";
 import { RGBAFormat, Scene } from "three";
+/* eslint-disable react-hooks/immutability */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 export interface RenderTextureProps {
   /** Debug this texture full screen */

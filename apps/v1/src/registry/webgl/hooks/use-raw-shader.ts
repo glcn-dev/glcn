@@ -1,16 +1,23 @@
-/* eslint-disable @typescript-eslint/no-empty-object-type */
 import { useMemo } from "react";
-import { IUniform, RawShaderMaterial, ShaderMaterialParameters } from "three";
+import { RawShaderMaterial, ShaderMaterialParameters } from "three";
 import { Defines, useDefines } from "@/registry/webgl/hooks/use-defines";
+import type { Uniforms } from "@/registry/webgl/lib/webgl-types";
 
-type RawShaderProgram<U extends Record<string, IUniform> = {}> = RawShaderMaterial & {
+type RawShaderProgram<U extends Uniforms> = RawShaderMaterial & {
   uniforms: U;
   setDefine: (name: string, value: string) => void;
 };
 
-export function useRawShader<U extends Record<string, IUniform> = {}>(
-  parameters: Omit<ShaderMaterialParameters, "uniforms"> & U = {} as U,
-  defines?: Defines
+interface RawShaderParameters<U extends Uniforms> extends Omit<
+  ShaderMaterialParameters,
+  "uniforms" | "defines"
+> {
+  uniforms?: U;
+}
+
+export function useRawShader<U extends Uniforms = Uniforms>(
+  parameters: RawShaderParameters<U>,
+  defines: Defines = {}
 ): RawShaderProgram<U> {
   const program = useMemo(() => {
     const p = new RawShaderMaterial({
@@ -26,8 +33,7 @@ export function useRawShader<U extends Record<string, IUniform> = {}>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parameters.vertexShader, parameters.fragmentShader]);
 
-  useDefines(program, defines)
+  useDefines(program, defines);
 
   return program;
 }
-
