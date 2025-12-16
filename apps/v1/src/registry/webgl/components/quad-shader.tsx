@@ -1,5 +1,4 @@
 import { forwardRef, useImperativeHandle } from "react";
-import type { RenderCallback } from "@react-three/fiber";
 import {
   useQuadShader,
   type QuadShaderApi,
@@ -10,7 +9,9 @@ import { quadGeometry } from "@/registry/webgl/lib/quads";
 /**
  * Props for the QuadShader component, which renders a fullscreen quad mesh with a given ShaderMaterial.
  */
-export type QuadShaderProps = UseQuadShaderOptions;
+export interface QuadShaderProps extends UseQuadShaderOptions {
+  attach?: string;
+}
 
 /**
  * Renders a fullscreen quad mesh with the provided ShaderMaterial, optionally to a render target.
@@ -20,7 +21,15 @@ export type QuadShaderProps = UseQuadShaderOptions;
  */
 export const QuadShader = forwardRef<QuadShaderApi, QuadShaderProps>(
   function QuadShader(
-    { program, renderTarget, beforeRender, afterRender, autoRender, priority },
+    {
+      program,
+      renderTarget,
+      beforeRender,
+      afterRender,
+      autoRender,
+      priority,
+      attach,
+    },
     ref
   ) {
     const api = useQuadShader({
@@ -34,7 +43,18 @@ export const QuadShader = forwardRef<QuadShaderApi, QuadShaderProps>(
 
     useImperativeHandle(ref, () => api, [api]);
 
-    return null;
+    const rt =
+      renderTarget && "current" in renderTarget
+        ? renderTarget.current
+        : renderTarget;
+
+    return (
+      <>
+        {attach && rt ? (
+          <primitive attach={attach} object={rt.texture} />
+        ) : null}
+      </>
+    );
   }
 );
 
