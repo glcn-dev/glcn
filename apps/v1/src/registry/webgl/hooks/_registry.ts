@@ -80,4 +80,18 @@ export const hooks: Registry["items"] = [
       },
     ],
   },
+  {
+    name: "use-quad-shader",
+    type: "registry:hook",
+    description:
+      "A hook for rendering fullscreen quads with ShaderMaterial to a render target or screen",
+    dependencies: ["@react-three/fiber", "three"],
+    registryDependencies: ["quads", "save-gl-state"],
+    files: [
+      {
+        path: "registry/webgl/hooks/use-quad-shader.ts",
+        type: "registry:hook",
+      },
+    ],
+  },
 ];
