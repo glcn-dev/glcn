@@ -18,6 +18,36 @@ export interface QuadShaderProps extends UseQuadShaderOptions {
  * This is commonly used for postprocessing or rendering effects to a texture.
  *
  * Use a ref to access the QuadShaderApi for manual rendering control when autoRender is false.
+ *
+ * @example
+ * // Auto-render to a render target and attach its texture to a mesh
+ * const fbo = useFbo({
+ *   width: 512,
+ *   height: 512
+ * });
+ *
+ * <mesh>
+ *   <planeGeometry />
+ *   <meshBasicMaterial>
+ *     <QuadShader program={shaderMaterial} renderTarget={fbo} attach="map" />
+ *   </meshBasicMaterial>
+ * </mesh>
+ *
+ * @example
+ * // Manual render control with imperative ref
+ * const quadRef = useRef<QuadShaderApi>(null);
+ *
+ * useFrame((_, delta) => {
+ *   // Custom render timing
+ *   quadRef.current?.render(delta);
+ * });
+ *
+ * <QuadShader
+ *   ref={quadRef}
+ *   program={shaderMaterial}
+ *   renderTarget={null}
+ *   autoRender={false}
+ * />
  */
 export const QuadShader = forwardRef<QuadShaderApi, QuadShaderProps>(
   function QuadShader(
