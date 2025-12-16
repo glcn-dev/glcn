@@ -1,7 +1,7 @@
 import type { RefObject } from "react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import type { RootState } from "@react-three/fiber";
+import type { RenderCallback, RootState } from "@react-three/fiber";
 import type {
   RawShaderMaterial,
   ShaderMaterial,
@@ -26,11 +26,11 @@ export interface UseQuadShaderOptions {
   /**
    * Optional callback to run before rendering the quad.
    */
-  beforeRender?: (state: RootState, delta: number) => void;
+  beforeRender?: RenderCallback;
   /**
    * Optional callback to run after rendering the quad.
    */
-  afterRender?: (state: RootState, delta: number) => void;
+  afterRender?: RenderCallback;
   /**
    * Whether the quad should automatically render each frame. Defaults to true.
    */
@@ -49,7 +49,7 @@ export interface QuadShaderApi {
    * Manually render the quad shader. Use this when autoRender is false.
    * @param delta - The time delta since the last frame.
    */
-  render: (delta: number) => void;
+  render: (delta: number, frame?: XRFrame) => void;
 }
 
 /**
@@ -112,11 +112,11 @@ export function useQuadShader(options: UseQuadShaderOptions): QuadShaderApi {
 
   // Core render function
   const renderQuad = useCallback(
-    (delta: number) => {
+    (delta: number, frame?: XRFrame) => {
       const restoreGlState = saveGlState(state);
 
       if (beforeRenderRef.current) {
-        beforeRenderRef.current(state, delta);
+        beforeRenderRef.current(state, delta, frame);
       }
 
       // Set render target
@@ -132,7 +132,7 @@ export function useQuadShader(options: UseQuadShaderOptions): QuadShaderApi {
       state.gl.render(containerScene, quadCamera);
 
       if (afterRenderRef.current) {
-        afterRenderRef.current(state, delta);
+        afterRenderRef.current(state, delta, frame);
       }
 
       restoreGlState();
@@ -141,9 +141,9 @@ export function useQuadShader(options: UseQuadShaderOptions): QuadShaderApi {
   );
 
   // Auto-render using useFrame when enabled
-  useFrame((_, delta) => {
+  useFrame((_, delta, frame) => {
     if (autoRender) {
-      renderQuad(delta);
+      renderQuad(delta, frame);
     }
   }, priority);
 
