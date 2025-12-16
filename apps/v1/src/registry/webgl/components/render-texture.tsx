@@ -1,4 +1,3 @@
-
 import type { RootState } from "@react-three/fiber";
 import { createPortal, useFrame, useThree } from "@react-three/fiber";
 import type { DomEvent } from "@react-three/fiber/dist/declarations/src/core/events";
@@ -14,17 +13,18 @@ import {
 } from "react";
 import * as THREE from "three";
 import { RGBAFormat, Scene } from "three";
-/* eslint-disable react-hooks/immutability */
+import { saveGlState } from "../lib/save-gl-state";
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export interface RenderTextureProps {
   /** Debug this texture full screen */
   debug?: boolean;
-  /** Whether the render target is active */
+  /** Whether the render target is active, it will auto-render the scene */
   isPlaying?: boolean;
-  /** The width of the render target */
+  /** The width of the render target, only used if you dont provide an fbo */
   width?: number;
-  /** The height of the render target */
+  /** The height of the render target, only used if you dont provide an fbo */
   height?: number;
   /** Attach the texture to a THREE.Object3D */
   attach?: string | null;
@@ -32,14 +32,16 @@ export interface RenderTextureProps {
   onMapTexture?: (texture: THREE.Texture) => void;
   /** Callback called when a new depthTexture is used */
   onDepthTexture?: (texture: THREE.DepthTexture) => void;
-  /** Use a custom render target */
+  /** Use a custom render target, this will disable automatic resizing */
   fbo?: THREE.WebGLRenderTarget;
-  /** A scene to use as a container */
+  /** A custom scene to use as a container */
   containerScene?: Scene;
-  /** Use global mouse coordinate to calculate raycast */
+  /** Use global mouse coordinates to calculate raycast */
   useGlobalPointer?: boolean;
   /** Priority of the render frame */
   renderPriority?: number;
+  /** Ref to mesh used for raycasting UV compute. If provided, skips r3f tree traversal */
+  raycastingMesh?: React.RefObject<THREE.Mesh | null>;
 }
 
 const renderTextureContext = createContext<{
@@ -95,6 +97,7 @@ export function RenderTexture({
   children,
   useGlobalPointer,
   renderPriority,
+  raycastingMesh,
 }: PropsWithChildren<RenderTextureProps>): JSX.Element {
   const width = useThree((s) => (typeof _w === "number" ? _w : s.size.width));
   const height = useThree((s) => (typeof _h === "number" ? _h : s.size.height));
@@ -142,6 +145,12 @@ export function RenderTexture({
   viewportSizeRef.current = viewportSize;
 
   useEffect(() => {
+    if (_fbo) {
+      setIsPlaying(_playing);
+      isPlayingRef.current = _playing;
+      // user is providing a custom fbo, we dont want to resize
+      return;
+    }
     fbo.setSize(width, height);
     const abortController = new AbortController();
     const signal = abortController.signal;
@@ -158,7 +167,7 @@ export function RenderTexture({
     return () => {
       abortController.abort();
     };
-  }, [fbo, _playing, width, height, setIsPlaying]);
+  }, [fbo, _playing, width, height, setIsPlaying, _fbo]);
 
   /** UV compute function relative to the viewport */
   const viewportUvCompute = useCallback(
@@ -178,22 +187,32 @@ export function RenderTexture({
 
   const objectRef = useRef<Record<string, unknown>>(null);
 
+  /**
+   * Traverses the r3f tree to find the closest parent Object3D.
+   * Since a texture doesn't have an easy way to obtain the parent,
+   * we use r3f internals to find the next Object3D.
+   */
+  const findClosestParent = useCallback((): THREE.Object3D | null => {
+    if (!objectRef.current) return null;
+    let parent = (objectRef.current as any)?.__r3f?.parent?.object;
+    while (parent && !(parent instanceof THREE.Object3D)) {
+      parent = parent?.__r3f?.parent?.object;
+    }
+    return parent ?? null;
+  }, []);
+
   /** UV compute relative to the parent mesh UV */
   const uvCompute = useCallback(
     (event: DomEvent, state: RootState, previous: RootState) => {
-      if (!isPlayingRef.current || !objectRef.current) return;
+      if (!isPlayingRef.current) return;
 
-      // Since this is only a texture it does not have an easy way to obtain the parent, which we
-      // need to transform event coordinates to local coordinates. We use r3f internals to find the
-      // next Object3D.
+      // Determine the mesh to use for raycasting
+      const mesh = raycastingMesh
+        ? raycastingMesh.current
+        : findClosestParent();
+      if (!mesh) return;
 
-      let parent = (objectRef.current as any)?.__r3f?.parent?.object;
-      while (parent && !(parent instanceof THREE.Object3D)) {
-        parent = parent.__r3f.parent.object;
-      }
-      if (!parent) return false;
       // First we call the previous state-onion-layers compute, this is what makes it possible to nest portals
-
       if (!previous.raycaster.camera) {
         previous.events.compute?.(
           event,
@@ -201,11 +220,11 @@ export function RenderTexture({
           previous.previousRoot?.getState()
         );
       }
-      // We run a quick check against the parent, if it isn't hit there's no need to raycast at all
 
-      const [intersection] = previous.raycaster.intersectObject(parent);
-
+      // Check if the mesh is hit, if not there's no need to raycast at all
+      const [intersection] = previous.raycaster.intersectObject(mesh);
       if (!intersection) return false;
+
       // We take that hits uv coords, set up this layers raycaster, et voilà, we have raycasting on arbitrary surfaces
       const uv = intersection.uv;
       if (!uv) return false;
@@ -214,8 +233,7 @@ export function RenderTexture({
         state.camera
       );
     },
-
-    []
+    [raycastingMesh, findClosestParent]
   );
 
   const contextValue = useMemo(
@@ -269,18 +287,16 @@ function SceneContainer({
 }: PropsWithChildren<SceneContainerProps>): JSX.Element {
   useTextureFrame(
     ({ state }) => {
-      const prevToneMapping = state.gl.toneMapping;
-      const prevExposure = state.gl.toneMappingExposure;
+      const restore = saveGlState(state);
       state.gl.toneMapping = THREE.NoToneMapping;
       state.gl.toneMappingExposure = 1;
-      if (!debug) {
-        state.gl.setRenderTarget(fbo as any);
-        fbo.texture.needsUpdate = true;
+      if (debug) {
+        state.gl.setRenderTarget(null);
+      } else {
+        state.gl.setRenderTarget(fbo);
       }
       state.gl.render(state.scene, state.camera);
-      state.gl.setRenderTarget(null);
-      state.gl.toneMapping = prevToneMapping;
-      state.gl.toneMappingExposure = prevExposure;
+      restore();
     },
     debug ? 1000 : renderPriority
   );
