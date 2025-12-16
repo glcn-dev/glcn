@@ -14,23 +14,22 @@ import * as THREE from "three";
  * @returns The memoized uniforms object
  *
  * @example
- * const [color, setColor] = useState('red')
+ * const width = useThree(({size}) => (size.width))
+ * const height = useThree(({size}) => (size.height))
  *
  * // Using a factory function (recommended)
  * const uniforms = useUniforms(() => ({
  *   uTime: { value: 0 },
- *   uColor: { value: new THREE.Color(color) }
  *   uResolution: { value: new THREE.Vector2() },
  *   uTexture: { value: null as THREE.Texture | null },
  * }));
  *
  * // Make a uniform react to a state change
- * uniforms.uColor.value.set(color)
+ * uniforms.uResolution.value.set(width, height);
  *
  * // Update uniform values on each frame
- * useFrame(({ clock, size }) => {
+ * useFrame(({ clock }) => {
  *   uniforms.uTime.value = clock.elapsedTime;
- *   uniforms.uResolution.value.set(size.width, size.height);
  * });
  */
 export function useUniforms<T extends Record<string, THREE.IUniform>>(

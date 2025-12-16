@@ -1,5 +1,27 @@
 import * as THREE from "three";
 
+/**
+ * A double-buffered framebuffer object (ping-pong buffer) for GPU computations.
+ *
+ * Manages two WebGLRenderTargets that can be swapped between read and write roles.
+ * Essential for GPU-based simulations where you need to read from the previous
+ * frame while writing to the current frame.
+ *
+ * @typeParam TTexture - The texture type for the render targets
+ *
+ * @example
+ * const doubleFbo = new DoubleFbo(512, 512, {
+ *   minFilter: THREE.NearestFilter,
+ *   magFilter: THREE.NearestFilter,
+ *   type: THREE.FloatType,
+ * });
+ *
+ * // In render loop:
+ * material.uniforms.uPrevious.value = doubleFbo.read.texture;
+ * gl.setRenderTarget(doubleFbo.write);
+ * gl.render(scene, camera);
+ * doubleFbo.swap();
+ */
 export class DoubleFbo<
   TTexture extends THREE.Texture | THREE.Texture[] = THREE.Texture,
 > {
@@ -15,14 +37,25 @@ export class DoubleFbo<
     this._write = new THREE.WebGLRenderTarget<TTexture>(width, height, options);
   }
 
+  /**
+   * The render target to read from (contains previous frame data).
+   */
   get read(): THREE.WebGLRenderTarget<TTexture> {
     return this._read;
   }
 
+  /**
+   * The render target to write to (current frame destination).
+   */
   get write(): THREE.WebGLRenderTarget<TTexture> {
     return this._write;
   }
 
+  /**
+   * Swaps the read and write buffers.
+   * Call this after rendering to make the current write buffer
+   * available as the read buffer for the next frame.
+   */
   swap(): void {
     const temp = this._read;
     this._read = this._write;

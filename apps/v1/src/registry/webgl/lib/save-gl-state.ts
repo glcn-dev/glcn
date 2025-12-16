@@ -1,6 +1,28 @@
 import type { RootState } from "@react-three/fiber";
 import { Color, Vector4 } from "three";
 
+/**
+ * Saves the current WebGL renderer state and returns a function to restore it.
+ * Captures render target, clear color/alpha, viewport, autoClear, and output color space.
+ *
+ * Useful when temporarily modifying GL state for custom render passes.
+ *
+ * @param state - The R3F root state containing the WebGL renderer
+ * @returns A restore function that resets all captured state
+ *
+ * @example
+ * useFrame((state) => {
+ *   const restore = saveGlState(state);
+ *
+ *   // Modify GL state for custom rendering
+ *   state.gl.setRenderTarget(myFbo);
+ *   state.gl.autoClear = false;
+ *   state.gl.render(scene, camera);
+ *
+ *   // Restore original state
+ *   restore();
+ * });
+ */
 export function saveGlState(state: RootState) {
   const prevTarget = state.gl.getRenderTarget();
   const prevClearColor = new Color();
