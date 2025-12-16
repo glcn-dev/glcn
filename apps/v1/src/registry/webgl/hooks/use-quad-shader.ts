@@ -1,7 +1,7 @@
 import type { RefObject } from "react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import type { RenderCallback, RootState } from "@react-three/fiber";
+import type { RenderCallback } from "@react-three/fiber";
 import type {
   RawShaderMaterial,
   ShaderMaterial,
