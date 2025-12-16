@@ -1,4 +1,5 @@
 import { type Registry } from "shadcn/schema";
+import { shaderChunks } from "./shader-chunks/_registry";
 
 export const lib: Registry["items"] = [
   {
@@ -53,4 +54,5 @@ export const lib: Registry["items"] = [
       },
     ],
   },
+  ...shaderChunks,
 ];
