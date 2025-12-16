@@ -5,6 +5,7 @@ import type { RenderCallback } from "@react-three/fiber";
 import type { ShaderMaterial, WebGLRenderTarget } from "three";
 import { Scene } from "three";
 import { quadGeometry, quadCamera } from "@/registry/webgl/lib/quads";
+import { saveGlState } from "@/registry/webgl/lib/save-gl-state";
 
 /**
  * Props for the QuadShader component, which renders a fullscreen quad mesh with a given ShaderMaterial.
@@ -51,15 +52,15 @@ export function QuadShader({
   const containerScene = useMemo(() => new Scene(), []);
 
   useFrame((state, delta) => {
+    const restoreGlState = saveGlState(state);
+
     if (beforeRender) {
       beforeRender(state, delta);
     }
     if (autoRender) {
       if (!renderTarget) {
-        // render to screen
+        // set render target to screen
         state.gl.setRenderTarget(null);
-
-        state.gl.render(containerScene, quadCamera);
       } else {
         // render target set
         if ("current" in renderTarget) {
@@ -69,13 +70,15 @@ export function QuadShader({
         }
       }
 
+      state.gl.clear(true, true);
       state.gl.render(containerScene, quadCamera);
-      state.gl.setRenderTarget(null);
     }
 
     if (afterRender) {
       afterRender(state, delta);
     }
+
+    restoreGlState();
   }, priority);
 
   return (
@@ -84,7 +87,6 @@ export function QuadShader({
         <mesh geometry={quadGeometry}>
           <primitive object={program} />
         </mesh>,
-
         containerScene
       )}
     </>

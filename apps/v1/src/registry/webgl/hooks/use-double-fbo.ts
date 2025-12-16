@@ -29,7 +29,7 @@ export function useDoubleFbo({ width, height, ...params }: UseDoubleFboParams) {
   }, []);
 
   useEffect(() => {
-    doubleFbo.setSize(h, h);
+    doubleFbo.setSize(w, h);
   }, [doubleFbo, w, h]);
 
   useEffect(() => {

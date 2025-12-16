@@ -28,7 +28,7 @@ export function useFbo({ width, height, ...params }: UseFboParams) {
   }, []);
 
   useEffect(() => {
-    fbo.setSize(h, h);
+    fbo.setSize(w, h);
   }, [fbo, w, h]);
 
   return fbo;

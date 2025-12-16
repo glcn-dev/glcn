@@ -20,7 +20,7 @@ export const components: Registry["items"] = [
     description:
       "A utility for rendering a given ShaderMaterial to a quad mesh, optionally to a render target",
     dependencies: ["@react-three/fiber", "three"],
-    registryDependencies: ["quads"],
+    registryDependencies: ["quads", "save-gl-state"],
     files: [
       {
         path: "registry/webgl/components/quad-shader.tsx",
