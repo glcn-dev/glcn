@@ -7,7 +7,13 @@ export interface UseFboParams extends THREE.RenderTargetOptions {
   height?: number;
 }
 
-export function useFbo({ width, height, ...params }: UseFboParams) {
+export function useFbo<
+  TTexture extends THREE.Texture | THREE.Texture[] = THREE.Texture,
+>({
+  width,
+  height,
+  ...params
+}: UseFboParams): THREE.WebGLRenderTarget<TTexture> {
   const w = useThree((s) => {
     if (typeof width === "number") {
       return width;
@@ -23,7 +29,7 @@ export function useFbo({ width, height, ...params }: UseFboParams) {
   });
 
   const fbo = useMemo(() => {
-    return new THREE.WebGLRenderTarget(w, h, params);
+    return new THREE.WebGLRenderTarget<TTexture>(w, h, params);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

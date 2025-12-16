@@ -8,7 +8,9 @@ export interface UseDoubleFboParams extends THREE.RenderTargetOptions {
   height?: number;
 }
 
-export function useDoubleFbo({ width, height, ...params }: UseDoubleFboParams) {
+export function useDoubleFbo<
+  TTexture extends THREE.Texture | THREE.Texture[] = THREE.Texture,
+>({ width, height, ...params }: UseDoubleFboParams) {
   const w = useThree((s) => {
     if (typeof width === "number") {
       return width;
@@ -24,7 +26,7 @@ export function useDoubleFbo({ width, height, ...params }: UseDoubleFboParams) {
   });
 
   const doubleFbo = useMemo(() => {
-    return new DoubleFbo(w, h, params);
+    return new DoubleFbo<TTexture>(w, h, params);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
