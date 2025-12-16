@@ -90,6 +90,15 @@ export const QuadShader = forwardRef<QuadShaderApi, QuadShaderProps>(
 
 export type { QuadShaderApi };
 
+/**
+ * A simple mesh component that uses a fullscreen quad geometry.
+ * Useful for rendering fullscreen effects or post-processing passes.
+ *
+ * @example
+ * <QuadMesh>
+ *   <shaderMaterial fragmentShader={myFragmentShader} />
+ * </QuadMesh>
+ */
 export function QuadMesh({ children }: { children: React.ReactNode }) {
   return <mesh geometry={quadGeometry}>{children}</mesh>;
 }

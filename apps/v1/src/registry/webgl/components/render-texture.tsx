@@ -17,6 +17,9 @@ import { saveGlState } from "../lib/save-gl-state";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+/**
+ * Props for the RenderTexture component.
+ */
 export interface RenderTextureProps {
   /** Debug this texture full screen */
   debug?: boolean;
@@ -44,6 +47,10 @@ export interface RenderTextureProps {
   raycastingMesh?: React.RefObject<THREE.Mesh | null>;
 }
 
+/**
+ * Context providing render texture state to child components.
+ * @internal
+ */
 const renderTextureContext = createContext<{
   isInsideRenderTexture: boolean;
   isPlaying: boolean;
@@ -54,10 +61,25 @@ const renderTextureContext = createContext<{
 
 renderTextureContext.displayName = "RenderTextureContext";
 
+/**
+ * Hook to access the render texture context.
+ * Returns information about whether the component is inside a RenderTexture
+ * and whether the render texture is currently playing.
+ *
+ * @returns Object containing `isInsideRenderTexture` and `isPlaying` booleans
+ */
 const useRenderTexture = () => {
   return useContext(renderTextureContext);
 };
 
+/**
+ * Callback function type for texture frame rendering.
+ * @param params - The render parameters
+ * @param params.elapsedTime - Total elapsed time since the render texture started playing
+ * @param params.state - The R3F root state
+ * @param params.delta - Time delta since last frame
+ * @param params.frame - Optional XR frame for WebXR applications
+ */
 export type TextureRenderCallback = (params: {
   elapsedTime: number;
   state: RootState;
@@ -65,6 +87,14 @@ export type TextureRenderCallback = (params: {
   frame?: XRFrame;
 }) => void;
 
+/**
+ * Hook for running frame callbacks inside a RenderTexture.
+ * Similar to useFrame but respects the RenderTexture's isPlaying state
+ * and provides elapsed time tracking.
+ *
+ * @param callback - The callback to run each frame
+ * @param priority - Optional render priority (higher = later in render order)
+ */
 const useTextureFrame = (
   callback: TextureRenderCallback,
   priority?: number
@@ -84,6 +114,43 @@ const useTextureFrame = (
   }, priority);
 };
 
+/**
+ * Renders children to an offscreen texture that can be used as a material map.
+ * Creates a portal scene with its own camera and event system, enabling
+ * interactive 3D content to be rendered to textures.
+ *
+ * Supports automatic resizing, custom FBOs, UV-based raycasting for
+ * interactive textures on 3D surfaces, and depth texture access.
+ *
+ * @example
+ * // Basic usage - render to a texture and attach to a material
+ * <mesh>
+ *   <planeGeometry args={[2, 2]} />
+ *   <meshBasicMaterial>
+ *     <RenderTexture attach="map">
+ *       <mesh>
+ *         <boxGeometry />
+ *         <meshNormalMaterial />
+ *       </mesh>
+ *     </RenderTexture>
+ *   </meshBasicMaterial>
+ * </mesh>
+ *
+ * @example
+ * // With custom FBO and depth texture callback
+ * const handleDepthTexture = (depthTex) => {
+ *   myMaterial.uniforms.uDepth.value = depthTex;
+ * };
+ *
+ * <RenderTexture
+ *   width={1024}
+ *   height={1024}
+ *   onDepthTexture={handleDepthTexture}
+ *   attach="map"
+ * >
+ *   <MyScene />
+ * </RenderTexture>
+ */
 export function RenderTexture({
   isPlaying: _playing = true,
   debug,
@@ -273,12 +340,24 @@ export function RenderTexture({
   );
 }
 
+/**
+ * Props for the internal SceneContainer component.
+ * @internal
+ */
 interface SceneContainerProps {
+  /** The WebGL render target to render into */
   fbo: THREE.WebGLRenderTarget;
+  /** When true, renders to screen instead of the FBO for debugging */
   debug?: boolean;
+  /** Priority for the render frame callback */
   renderPriority?: number;
 }
 
+/**
+ * Internal component that handles the actual rendering of the portal scene to the FBO.
+ * Manages GL state, tone mapping, and render target switching.
+ * @internal
+ */
 function SceneContainer({
   fbo,
   renderPriority,

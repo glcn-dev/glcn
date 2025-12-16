@@ -31,14 +31,35 @@ void main() {
 }
 `;
 
+/**
+ * Props for the FboDebug component.
+ */
 export interface FboDebugProps {
+  /**
+   * Optional configuration for hit testing scale adjustment.
+   * When viewing multiple textures in a grid, the scale is adjusted
+   * to match the grid layout.
+   */
   hitConfig?: {
     scale: number;
   };
+  /**
+   * Record of named textures to debug.
+   * Supports raw Textures, WebGLRenderTargets, or DoubleFbo instances.
+   */
   textures: Record<string, Texture | WebGLRenderTarget | DoubleFbo | null>;
+  /**
+   * The default texture to display. Defaults to "screen".
+   * Can be overridden via URL query param `?debugTarget=<name>`.
+   */
   defaultTexture?: string;
 }
 
+/**
+ * Determines the initial texture to display, checking URL query params first.
+ * Falls back to the provided default if the query param texture doesn't exist.
+ * @internal
+ */
 function getInitialSelectedTexture(defaultTexture: string, textures: string[]) {
   const query =
     typeof window !== "undefined"
@@ -53,6 +74,11 @@ function getInitialSelectedTexture(defaultTexture: string, textures: string[]) {
   return defaultTexture;
 }
 
+/**
+ * Extracts the underlying Texture from various texture container types.
+ * Handles raw Textures, WebGLRenderTargets, and DoubleFbo instances.
+ * @internal
+ */
 function getTexture(
   value: Texture | WebGLRenderTarget | DoubleFbo | null
 ): Texture | null {
@@ -65,6 +91,38 @@ function getTexture(
   return value as Texture;
 }
 
+/**
+ * Debug component for visualizing framebuffer objects (FBOs) and render targets.
+ * Provides a Leva-controlled UI to switch between different textures and view
+ * them either individually fullscreen or in a grid layout.
+ *
+ * Useful during development to inspect intermediate render passes, depth buffers,
+ * and other off-screen textures.
+ *
+ * @example
+ * // Debug multiple render targets
+ * const colorFbo = useFbo({ width: 512, height: 512 });
+ * const depthFbo = useFbo({ width: 512, height: 512 });
+ *
+ * <FboDebug
+ *   textures={{
+ *     color: colorFbo,
+ *     depth: depthFbo,
+ *     screen: null, // null shows the main screen
+ *   }}
+ *   defaultTexture="color"
+ * />
+ *
+ * @example
+ * // With DoubleFbo for ping-pong buffers
+ * const doubleFbo = useDoubleFbo({ width: 256, height: 256 });
+ *
+ * <FboDebug
+ *   textures={{
+ *     simulation: doubleFbo,
+ *   }}
+ * />
+ */
 export function FboDebug({
   hitConfig,
   textures,
